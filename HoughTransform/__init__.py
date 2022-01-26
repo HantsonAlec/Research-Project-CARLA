@@ -1,0 +1,2 @@
+import imp
+from HoughTransform.houghtransform import HoughTransform
