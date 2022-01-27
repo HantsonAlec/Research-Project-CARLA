@@ -22,17 +22,17 @@ class DETR_CUSTOM:
         self.model.eval()
 
         # Attributes
-        self.id2label = self.load_labels()
+        self.labels = self.load_labels()
         self.colors = [[random.randint(0, 255)
-                        for _ in range(3)] for _ in self.id2label.values()]
+                        for _ in range(3)] for _ in self.labels.values()]
 
     def load_labels(self):
         with open("detrCustom/labels.json", "r") as outfile:
-            id2label = json.load(outfile)
-        return id2label
+            labels = json.load(outfile)
+        return labels
 
     def get_attributes(self):
-        return self.id2label, self.colors
+        return self.labels, self.colors
 
     def predict_outputs(self, image):
         encoding = self.feature_extractor(image, return_tensors="pt")
@@ -71,10 +71,10 @@ class DetrLightning(pl.LightningModule):
 
     def __init__(self, lr, lr_backbone, weight_decay):
         super().__init__()
-        id2label = self.load_labels()
+        labels = self.load_labels()
         self.model = DetrForObjectDetection.from_pretrained("facebook/detr-resnet-50",
                                                             num_labels=len(
-                                                                id2label),
+                                                                labels),
                                                             ignore_mismatched_sizes=True)
         self.lr = lr
         self.lr_backbone = lr_backbone
@@ -82,8 +82,8 @@ class DetrLightning(pl.LightningModule):
 
     def load_labels(self):
         with open("detrCustom/labels.json", "r") as outfile:
-            id2label = json.load(outfile)
-        return id2label
+            labels = json.load(outfile)
+        return labels
 
     def forward(self, pixel_values, pixel_mask):
         outputs = self.model(pixel_values=pixel_values, pixel_mask=pixel_mask)
