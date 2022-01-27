@@ -16,7 +16,9 @@ from multiprocessing import Pool
 from LstrPredict import LSTRPredict
 from HoughTransform import HoughTransform
 from detrCustom.detrCustom import DETR_CUSTOM
+from SegFormer.SegFormer import SegFormer
 from PIL import Image
+import matplotlib.pyplot as plt
 
 try:
     sys.path.append(glob.glob('../carla/dist/carla-*%d.%d-%s.egg' % (
@@ -157,6 +159,7 @@ def draw_boxes_detrC(surface,  prob, boxes, classes, colors, font):
 
         surface.blit(text_surface, (x1, y1))
 
+
 def draw_boxes_detr(surface,  prob, boxes, classes, colors, font):
     for p, (x1, y1, x2, y2) in zip(prob, boxes.tolist()):
         cl = p.argmax()
@@ -168,6 +171,14 @@ def draw_boxes_detr(surface,  prob, boxes, classes, colors, font):
             surface, colors[int(cl.item())], (x1, y1, width, height), 2)
 
         surface.blit(text_surface, (x1, y1))
+
+
+def draw_mask(surface,array,seg_mask):
+    img = array * 0.5 + seg_mask * 0.5
+    image_surface = pygame.surfarray.make_surface(img.swapaxes(0, 1))
+    
+    surface.blit(image_surface, (0, 0))
+
 
 def get_image_as_array(image):
     array = np.array(image.raw_data)
@@ -219,6 +230,12 @@ def main():
         default='',
         type=str,
         help='Type of object detection to use')
+    argparser.add_argument(
+        '-s', '--segmentation',
+        metavar='S',
+        default='',
+        type=str,
+        help='Type of segmentation to use')
     args = argparser.parse_args()
 
     # Model paths
@@ -232,7 +249,6 @@ def main():
         lane_detector = HoughTransform()
 
     # Initialize object detection model
-    
     if args.object == 'yolo':
         confidence = 0.7
         object_detection = YoloV5(yolo_model_path, confidence)
@@ -245,6 +261,9 @@ def main():
         confidence = 0.5
         object_detection = DETR_CUSTOM(detr_model_path, confidence)
         classes, colors = object_detection.get_attributes()
+
+    if args.segmentation == 'segform':
+        segmentator= SegFormer()
 
     actor_list = []
     pygame.init()
@@ -292,11 +311,11 @@ def main():
         pool = Pool(processes=5)
         # Create a synchronous mode context.
         with CarlaSyncMode(world, sensor, fps=20) as sync_mode:
-            i=0
-            old_lane_avg=0
-            new_lane_avg=0
-            new_lines=[]
-            points=[]
+            i = 0
+            old_lane_avg = 0
+            new_lane_avg = 0
+            new_lines = []
+            points = []
             while True:
                 if should_quit():
                     return
@@ -307,16 +326,16 @@ def main():
                 # Draw the display.
                 buffer, buffer_converted = get_image_as_array(image_rgb)
                 if(args.lane == 'ht'):
-                    if i%20==0: 
+                    if i % 20 == 0:
                         lines = lane_detector.detect_lanes(buffer)
                     # Draw
                     draw_image_ht(display, buffer_converted, lines)
                 elif args.lane == 'lstr':
-                    if i%1==0: 
+                    if i % 1 == 0:
                         lane_points = lane_detector.detect_lanes(
                             buffer_converted)
                         print(lane_points)
-                        points=lane_points if lane_points!=[] else points
+                        points = lane_points if lane_points != [] else points
                     # Draw
                     draw_image_lstr(display, buffer_converted,
                                     points)
@@ -334,21 +353,26 @@ def main():
                         buffer_converted, outputs)
                     # Draw
                     draw_boxes_detrC(display, probas,
-                                    bboxes_scaled, classes, colors, font)
+                                     bboxes_scaled, classes, colors, font)
                 elif args.object == 'detr':
-                    PIL_image = Image.fromarray(np.uint8(buffer_converted)).convert('RGB')
+                    PIL_image = Image.fromarray(
+                        np.uint8(buffer_converted)).convert('RGB')
                     probas, bboxes_scaled = object_detection.detect_objects(
                         PIL_image)
                     # Draw
                     draw_boxes_detr(display, probas,
                                     bboxes_scaled, classes, colors, font)
+                if args.segmentation == 'segform':
+                    image=Image.fromarray(np.uint8(buffer_converted))
+                    seg_mask = segmentator.panoptic_detection(image)
+                    draw_mask(display,buffer,seg_mask)
 
                 # pool.apply_async(write_image, (snapshot.frame, "ped", buffer))
 
                 # display.blit(font.render('%d bones' % len(points), True, (255, 255, 255)), (8, 10))
 
                 pygame.display.flip()
-                i+=1
+                i += 1
 
     finally:
         # time.sleep(5)
