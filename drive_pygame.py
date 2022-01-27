@@ -120,13 +120,13 @@ def draw_image_ht(surface, array, lines, blend=False):
 
 def draw_image_lstr(surface, array, lane_points):
     image_surface = pygame.surfarray.make_surface(array.swapaxes(0, 1))
-    if lane_points==[]:
-        lane_points=[[0,0]]
+    if lane_points == []:
+        lane_points = [[0, 0]]
         print(lane_points)
     try:
         for lane in lane_points:
             pygame.draw.line(image_surface, (255, 0, 0),
-                            tuple(lane[0]), tuple(lane[-1]), 10)
+                             tuple(lane[0]), tuple(lane[-1]), 10)
     except:
         pass
 
@@ -179,10 +179,10 @@ def draw_boxes_detr(surface,  prob, boxes, classes, colors, font):
         surface.blit(text_surface, (x1, y1))
 
 
-def draw_mask(surface,array,seg_mask):
+def draw_mask(surface, array, seg_mask):
     img = array * 0.5 + seg_mask * 0.5
     image_surface = pygame.surfarray.make_surface(img.swapaxes(0, 1))
-    
+
     surface.blit(image_surface, (0, 0))
 
 
@@ -246,7 +246,7 @@ def main():
 
     # Model paths
     yolo_model_path = "./models/yolov5.pt"
-    detr_model_path = "./models/epoch=24-step=34774.ckpt"
+    detr_model_path = "./models/epoch=99-step=60299.ckpt"
 
     # Initialize lane detection model
     if args.lane == 'lstr':
@@ -269,7 +269,7 @@ def main():
         classes, colors = object_detection.get_attributes()
 
     if args.segmentation == 'segform':
-        segmentator= SegFormer()
+        segmentator = SegFormer()
 
     actor_list = []
     pygame.init()
@@ -337,9 +337,9 @@ def main():
                     # Draw
                     draw_image_ht(display, buffer_converted, lines)
                 elif args.lane == 'lstr':
-                    #if i % 1 == 0:
+                    # if i % 1 == 0:
                     lane_points = lane_detector.detect_lanes(
-                            buffer_converted)
+                        buffer_converted)
                     points = lane_points if lane_points != [] else points
                     # Draw
                     draw_image_lstr(display, buffer_converted,
@@ -368,9 +368,9 @@ def main():
                     draw_boxes_detr(display, probas,
                                     bboxes_scaled, classes, colors, font)
                 if args.segmentation == 'segform':
-                    image=Image.fromarray(np.uint8(buffer_converted))
+                    image = Image.fromarray(np.uint8(buffer_converted))
                     seg_mask = segmentator.panoptic_detection(image)
-                    draw_mask(display,buffer,seg_mask)
+                    draw_mask(display, buffer, seg_mask)
 
                 # pool.apply_async(write_image, (snapshot.frame, "ped", buffer))
 
