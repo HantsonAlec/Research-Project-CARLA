@@ -1,5 +1,6 @@
 # Research-Project-CARLA
 
+Research project where I implemented various transformer models and more "traditional" models for object detection, lane detection,.. to find out if transformers already work better.
 
 ## Acknowledgements
 
