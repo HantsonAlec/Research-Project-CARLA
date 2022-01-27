@@ -120,9 +120,15 @@ def draw_image_ht(surface, array, lines, blend=False):
 
 def draw_image_lstr(surface, array, lane_points):
     image_surface = pygame.surfarray.make_surface(array.swapaxes(0, 1))
-    for lane in lane_points:
-        pygame.draw.line(image_surface, (255, 0, 0),
-                         tuple(lane[0]), tuple(lane[-1]), 10)
+    if lane_points==[]:
+        lane_points=[[0,0]]
+        print(lane_points)
+    try:
+        for lane in lane_points:
+            pygame.draw.line(image_surface, (255, 0, 0),
+                            tuple(lane[0]), tuple(lane[-1]), 10)
+    except:
+        pass
 
     surface.blit(image_surface, (0, 0))
 
@@ -331,11 +337,10 @@ def main():
                     # Draw
                     draw_image_ht(display, buffer_converted, lines)
                 elif args.lane == 'lstr':
-                    if i % 1 == 0:
-                        lane_points = lane_detector.detect_lanes(
+                    #if i % 1 == 0:
+                    lane_points = lane_detector.detect_lanes(
                             buffer_converted)
-                        print(lane_points)
-                        points = lane_points if lane_points != [] else points
+                    points = lane_points if lane_points != [] else points
                     # Draw
                     draw_image_lstr(display, buffer_converted,
                                     points)
