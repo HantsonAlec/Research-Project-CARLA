@@ -364,7 +364,7 @@ def main():
               (len(vehicles_list), len(walkers_list)))
 
         # Example of how to use Traffic Manager parameters
-        traffic_manager.global_percentage_speed_difference(30.0)
+        traffic_manager.global_percentage_speed_difference(70.0)
 
         while True:
             if not args.asynch and synchronous_master:
