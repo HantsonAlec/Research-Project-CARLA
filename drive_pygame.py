@@ -42,7 +42,7 @@ except ImportError:
 import cv2
 IM_WIDTH, IM_HEIGHT = 640, 480
 
-
+# CarlaSyncMode is used from other carla examples
 class CarlaSyncMode(object):
     """
     Context manager to synchronize output from different sensors. Synchronous
