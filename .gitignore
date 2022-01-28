@@ -162,3 +162,5 @@ testimages
 models
 LSTR
 test.py
+content
+lightning_logs
