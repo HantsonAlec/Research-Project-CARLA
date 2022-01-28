@@ -11,27 +11,11 @@ try:
         'win-amd64' if os.name == 'nt' else 'linux-x86_64'))[0])
 except IndexError:
     pass
-
-
-# ==============================================================================
-# -- imports -------------------------------------------------------------------
-# ==============================================================================
-
-
 import carla
 
 IM_WIDTH = 640
 IM_HEIGHT = 480
 actor_list = []
-
-
-def process_img(image):
-    i = np.array(image.raw_data)
-    print(i.shape)
-    i2 = i.reshape((IM_HEIGHT, IM_WIDTH, 4))
-    i3 = i2[:, :, :3]
-    return i3/255.0
-
 
 try:
     # Connect
@@ -72,8 +56,6 @@ try:
     sensor.listen(lambda image: image.save_to_disk(
         'output/%06d.png' % image.frame_number))
 
-    # Alternative convert image to array
-    #sensor.listen(lambda image: process_img(image))
     time.sleep(60)
 finally:
     # cleanup

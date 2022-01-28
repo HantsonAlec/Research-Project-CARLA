@@ -19,7 +19,7 @@ class SegFormer:
         self.confidence = confidence
 
     def predict(self, image):
-        # Makinf prediction
+        # Making prediction
         pixel_values = self.feature_extractor(
             image, return_tensors="pt").pixel_values.to(self.device)
         with torch.no_grad():

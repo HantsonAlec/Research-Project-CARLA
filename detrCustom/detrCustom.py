@@ -43,13 +43,14 @@ class DETR_CUSTOM:
         return outputs
 
     def box_cxcywh_to_xyxy(self, x):
+        # Bounding box post-processing as proposed by DETR - (https://github.com/facebookresearch/detr/blob/main/util/box_ops.py)
         x_c, y_c, w, h = x.unbind(1)
         b = [(x_c - 0.5 * w), (y_c - 0.5 * h),
              (x_c + 0.5 * w), (y_c + 0.5 * h)]
         return torch.stack(b, dim=1)
 
     def rescale_bboxes(self, out_bbox, size):
-        #img_w, img_h = size
+        # Rescale based on original image
         img_h, img_w, dim = size
         b = self.box_cxcywh_to_xyxy(out_bbox)
         b = b * torch.tensor([img_w, img_h, img_w, img_h], dtype=torch.float32)
