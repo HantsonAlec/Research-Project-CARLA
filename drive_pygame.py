@@ -3,7 +3,6 @@ import os
 import sys
 import argparse
 import copy
-from DETR.DETR import DETR
 from yolo.yolov5.yolov5 import YoloV5
 from multiprocessing import Pool
 from LstrPredict import LSTRPredict
@@ -43,6 +42,8 @@ import cv2
 IM_WIDTH, IM_HEIGHT = 640, 480
 
 # CarlaSyncMode is used from other carla examples
+
+
 class CarlaSyncMode(object):
     """
     Context manager to synchronize output from different sensors. Synchronous
@@ -155,19 +156,6 @@ def draw_boxes_detrC(image_surface, prob, boxes, classes, colors, font):
         image_surface.blit(text_surface, (x1, y1))
 
 
-def draw_boxes_detr(image_surface, prob, boxes, classes, colors, font):
-    for p, (x1, y1, x2, y2) in zip(prob, boxes.tolist()):
-        cl = p.argmax()
-        width = x2-x1
-        height = y2-y1
-        text_surface = font.render(classes[cl.item()], True, (colors[int(
-            cl.item())][0], colors[int(cl.item())][1], colors[int(cl.item())][2]))
-        pygame.draw.rect(
-            image_surface, colors[int(cl.item())], (x1, y1, width, height), 2)
-
-        image_surface.blit(text_surface, (x1, y1))
-
-
 def draw_mask(array, seg_mask):
     img = array * 0.5 + seg_mask * 0.5
     image_surface = pygame.surfarray.make_surface(img.swapaxes(0, 1))
@@ -248,10 +236,6 @@ def main():
         object_detection = YoloV5(yolo_model_path, confidence)
         classes, colors = object_detection.get_attributes()
     elif args.object == 'detr':
-        confidence = 0.98
-        object_detection = DETR(confidence)
-        classes, colors = object_detection.get_attributes()
-    elif args.object == 'detrC':
         confidence = 0.5
         object_detection = DETR_CUSTOM(detr_model_path, confidence)
         classes, colors = object_detection.get_attributes()
@@ -335,7 +319,7 @@ def main():
                     # Draw
                     draw_boxes_yolo(buffer, image_surface,
                                     labels, cord, classes, colors, font)
-                elif args.object == 'detrC':
+                elif args.object == 'detr':
                     outputs = object_detection.predict_outputs(
                         buffer_converted)
                     probas, bboxes_scaled = object_detection.detect_objects(
@@ -343,14 +327,6 @@ def main():
                     # Draw
                     draw_boxes_detrC(image_surface, probas,
                                      bboxes_scaled, classes, colors, font)
-                elif args.object == 'detr':
-                    PIL_image = Image.fromarray(
-                        np.uint8(buffer_converted)).convert('RGB')
-                    probas, bboxes_scaled = object_detection.detect_objects(
-                        PIL_image)
-                    # Draw
-                    draw_boxes_detr(image_surface, probas,
-                                    bboxes_scaled, classes, colors, font)
                 if args.segmentation == 'segform':
                     image = Image.fromarray(np.uint8(buffer_converted))
                     seg_mask = segmentator.panoptic_detection(image)
