@@ -112,9 +112,13 @@ def draw_image_lstr(image_surface, lane_points):
         lane_points = [[0, 0]]
         print(lane_points)
     try:
+        # print(lane_points)
         for lane in lane_points:
-            pygame.draw.line(image_surface, (255, 0, 0),
-                             tuple(lane[0]), tuple(lane[-1]), 10)
+            for points in lane:
+                pygame.draw.circle(
+                    image_surface, (255, 0, 0), tuple(points), 3)
+            # pygame.draw.line(image_surface, (255, 0, 0),
+            #                 tuple(lane[0]), tuple(lane[-1]), 10)
     except:
         pass
 
