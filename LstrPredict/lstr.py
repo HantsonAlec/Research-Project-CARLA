@@ -27,6 +27,7 @@ class LSTRPredict:
         self.input_size = self.configs['db']['input_size']
 
     def predict(self, image):
+        # function is based on the original End-to-end implementation as used in LSTR github (https://github.com/liuruijin17/LSTR)
         self.height, self.width = image.shape[0:2]
 
         # Image
@@ -55,7 +56,7 @@ class LSTRPredict:
         return outputs
 
     def detect_lanes(self, image):
-        # getting results from model
+        # getting results from model - function is based on the original End-to-end implementation as used in LSTR github (https://github.com/liuruijin17/LSTR)
         outputs = self.predict(image)
         out_logits, out_curves = outputs['pred_logits'], outputs['pred_curves']
         prob = F.softmax(out_logits, -1)

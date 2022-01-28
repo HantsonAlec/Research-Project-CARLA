@@ -3,32 +3,41 @@ import torch
 from torch import nn
 import numpy as np
 
+
 class SegFormer:
     def __init__(self, confidence=0.85):
         torch.cuda.empty_cache()
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device(
+            "cuda" if torch.cuda.is_available() else "cpu")
         #self.device = torch.device("cpu")
         self.model_name = "nvidia/segformer-b5-finetuned-ade-640-640"
-        self.feature_extractor = SegformerFeatureExtractor.from_pretrained(self.model_name)
-        self.model = SegformerForSemanticSegmentation.from_pretrained(self.model_name)
+        self.feature_extractor = SegformerFeatureExtractor.from_pretrained(
+            self.model_name)
+        self.model = SegformerForSemanticSegmentation.from_pretrained(
+            self.model_name)
         self.model.to(self.device)
         self.confidence = confidence
 
-    def predict(self,image):
-        pixel_values = self.feature_extractor(image, return_tensors="pt").pixel_values.to(self.device)
+    def predict(self, image):
+        # Makinf prediction
+        pixel_values = self.feature_extractor(
+            image, return_tensors="pt").pixel_values.to(self.device)
         with torch.no_grad():
             outputs = self.model(pixel_values)
         logits = outputs.logits
-        #reshape
+        # reshape
         logits = nn.functional.interpolate(outputs.logits.detach().cpu(),
-                size=image.size[::-1],
-                mode='bilinear',
-                align_corners=False)
+                                           size=image.size[::-1],
+                                           mode='bilinear',
+                                           align_corners=False)
         pred = logits.argmax(dim=1)[0]
         return pred
-    def panoptic_detection(self,image):
-        seg=self.predict(image)
-        seg_mask = np.zeros((seg.shape[0], seg.shape[1], 3), dtype=np.uint8) # creating mask
+
+    def panoptic_detection(self, image):
+        # predict
+        seg = self.predict(image)
+        seg_mask = np.zeros(
+            (seg.shape[0], seg.shape[1], 3), dtype=np.uint8)  # creating mask
         palette = np.array(self.ade_palette())
         for label, color in enumerate(palette):
             seg_mask[seg == label, :] = color
