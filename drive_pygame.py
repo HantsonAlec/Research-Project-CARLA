@@ -1,12 +1,5 @@
-#!/usr/bin/env python
-# Copyright (c) 2021 Computer Vision Center (CVC) at the Universitat Autonoma de
-# Barcelona (UAB).
-#
-# This work is licensed under the terms of the MIT license.
-# For a copy, see <https://opensource.org/licenses/MIT>.
 import glob
 import os
-import pickle
 import sys
 import argparse
 import copy
@@ -18,7 +11,6 @@ from HoughTransform import HoughTransform
 from detrCustom.detrCustom import DETR_CUSTOM
 from SegFormer.SegFormer import SegFormer
 from PIL import Image
-import matplotlib.pyplot as plt
 
 try:
     sys.path.append(glob.glob('../carla/dist/carla-*%d.%d-%s.egg' % (
@@ -104,9 +96,7 @@ class CarlaSyncMode(object):
     # ---------------
 
 
-def draw_image_ht(surface, array, lines, blend=False):
-    #array = array[:, :, ::-1]
-    image_surface = pygame.surfarray.make_surface(array.swapaxes(0, 1))
+def draw_image_ht(image_surface, lines):
     if lines is not None:
         for line in lines:
             if min(line) < 0 or max(line) > 10000:
@@ -115,11 +105,9 @@ def draw_image_ht(surface, array, lines, blend=False):
             # draw lines on the mask
             pygame.draw.line(image_surface, (255, 0, 0),
                              (x1, y1), (x2, y2), 10)
-    surface.blit(image_surface, (0, 0))
 
 
-def draw_image_lstr(surface, array, lane_points):
-    image_surface = pygame.surfarray.make_surface(array.swapaxes(0, 1))
+def draw_image_lstr(image_surface, lane_points):
     if lane_points == []:
         lane_points = [[0, 0]]
         print(lane_points)
@@ -130,10 +118,8 @@ def draw_image_lstr(surface, array, lane_points):
     except:
         pass
 
-    surface.blit(image_surface, (0, 0))
 
-
-def draw_boxes_yolo(surface, array, labels, cord, classes, colors, font):
+def draw_boxes_yolo(array, image_surface, labels, cord, classes, colors, font):
     #array = array[:, :, ::-1]
     n = len(labels)
     x_shape, y_shape = array.shape[1], array.shape[0]
@@ -149,11 +135,11 @@ def draw_boxes_yolo(surface, array, labels, cord, classes, colors, font):
             labels[i])][0], colors[int(labels[i])][1], colors[int(labels[i])][2]))
         # Plot the boxes
         pygame.draw.rect(
-            surface, colors[int(labels[i])], (x1, y1, width, height), 2)
-        surface.blit(text_surface, (x1, y1))
+            image_surface, colors[int(labels[i])], (x1, y1, width, height), 2)
+        image_surface.blit(text_surface, (x1, y1))
 
 
-def draw_boxes_detrC(surface,  prob, boxes, classes, colors, font):
+def draw_boxes_detrC(image_surface, prob, boxes, classes, colors, font):
     for p, (x1, y1, x2, y2) in zip(prob, boxes.tolist()):
         cl = p.argmax()
         width = x2-x1
@@ -161,12 +147,11 @@ def draw_boxes_detrC(surface,  prob, boxes, classes, colors, font):
         text_surface = font.render(classes[str(cl.item())], True, (colors[int(
             cl.item())][0], colors[int(cl.item())][1], colors[int(cl.item())][2]))
         pygame.draw.rect(
-            surface, colors[int(cl.item())], (x1, y1, width, height), 2)
+            image_surface, colors[int(cl.item())], (x1, y1, width, height), 2)
+        image_surface.blit(text_surface, (x1, y1))
 
-        surface.blit(text_surface, (x1, y1))
 
-
-def draw_boxes_detr(surface,  prob, boxes, classes, colors, font):
+def draw_boxes_detr(image_surface, prob, boxes, classes, colors, font):
     for p, (x1, y1, x2, y2) in zip(prob, boxes.tolist()):
         cl = p.argmax()
         width = x2-x1
@@ -174,24 +159,23 @@ def draw_boxes_detr(surface,  prob, boxes, classes, colors, font):
         text_surface = font.render(classes[cl.item()], True, (colors[int(
             cl.item())][0], colors[int(cl.item())][1], colors[int(cl.item())][2]))
         pygame.draw.rect(
-            surface, colors[int(cl.item())], (x1, y1, width, height), 2)
+            image_surface, colors[int(cl.item())], (x1, y1, width, height), 2)
 
-        surface.blit(text_surface, (x1, y1))
+        image_surface.blit(text_surface, (x1, y1))
 
 
-def draw_mask(surface, array, seg_mask):
+def draw_mask(array, seg_mask):
     img = array * 0.5 + seg_mask * 0.5
     image_surface = pygame.surfarray.make_surface(img.swapaxes(0, 1))
-
-    surface.blit(image_surface, (0, 0))
+    return image_surface
 
 
 def get_image_as_array(image):
+    # Make carla frame to numpy and convert from BGR to RGB
     array = np.array(image.raw_data)
     array = array.reshape((IM_HEIGHT, IM_WIDTH, 4))
     array = array[:, :, :3]
     array_converted = array[:, :, ::-1]
-    # make the array writeable doing a deep copy
     array2 = copy.deepcopy(array)
     array_converted2 = copy.deepcopy(array_converted)
     return array2, array_converted2
@@ -282,8 +266,7 @@ def main():
 
     client = carla.Client('localhost', 2000)
     client.set_timeout(5.0)
-    # world = client.load_world(
-    #   'Town02_Opt', carla.MapLayer.Buildings | carla.MapLayer.ParkedVehicles)
+
     world = client.get_world()
 
     blueprint_library = world.get_blueprint_library()
@@ -296,8 +279,6 @@ def main():
 
     # Autopilot
     vehicle.set_autopilot(True)
-    # Manual
-    #vehicle.apply_control(carla.VehileControl(throttle=1.0, steer=0.0))
 
     # append spwaned vehicle to actors
     actor_list.append(vehicle)
@@ -318,9 +299,6 @@ def main():
         # Create a synchronous mode context.
         with CarlaSyncMode(world, sensor, fps=20) as sync_mode:
             i = 0
-            old_lane_avg = 0
-            new_lane_avg = 0
-            new_lines = []
             points = []
             while True:
                 if should_quit():
@@ -331,25 +309,27 @@ def main():
                 snapshot, image_rgb = sync_mode.tick(timeout=1.0)
                 # Draw the display.
                 buffer, buffer_converted = get_image_as_array(image_rgb)
+                image_surface = pygame.surfarray.make_surface(
+                    buffer_converted.swapaxes(0, 1))
+
                 if(args.lane == 'ht'):
                     if i % 20 == 0:
                         lines = lane_detector.detect_lanes(buffer)
                     # Draw
-                    draw_image_ht(display, buffer_converted, lines)
+                    draw_image_ht(image_surface, lines)
                 elif args.lane == 'lstr':
                     # if i % 1 == 0:
                     lane_points = lane_detector.detect_lanes(
                         buffer_converted)
                     points = lane_points if lane_points != [] else points
                     # Draw
-                    draw_image_lstr(display, buffer_converted,
-                                    points)
+                    draw_image_lstr(image_surface, points)
 
                 if args.object == 'yolo':
                     labels, cord = object_detection.detect_objects(
                         buffer_converted)
                     # Draw
-                    draw_boxes_yolo(display, buffer,
+                    draw_boxes_yolo(buffer, image_surface,
                                     labels, cord, classes, colors, font)
                 elif args.object == 'detrC':
                     outputs = object_detection.predict_outputs(
@@ -357,7 +337,7 @@ def main():
                     probas, bboxes_scaled = object_detection.detect_objects(
                         buffer_converted, outputs)
                     # Draw
-                    draw_boxes_detrC(display, probas,
+                    draw_boxes_detrC(image_surface, probas,
                                      bboxes_scaled, classes, colors, font)
                 elif args.object == 'detr':
                     PIL_image = Image.fromarray(
@@ -365,17 +345,15 @@ def main():
                     probas, bboxes_scaled = object_detection.detect_objects(
                         PIL_image)
                     # Draw
-                    draw_boxes_detr(display, probas,
+                    draw_boxes_detr(image_surface, probas,
                                     bboxes_scaled, classes, colors, font)
                 if args.segmentation == 'segform':
                     image = Image.fromarray(np.uint8(buffer_converted))
                     seg_mask = segmentator.panoptic_detection(image)
-                    draw_mask(display, buffer, seg_mask)
+                    # Create new mask
+                    image_surface = draw_mask(buffer, seg_mask)
 
-                # pool.apply_async(write_image, (snapshot.frame, "ped", buffer))
-
-                # display.blit(font.render('%d bones' % len(points), True, (255, 255, 255)), (8, 10))
-
+                display.blit(image_surface, (0, 0))
                 pygame.display.flip()
                 i += 1
 
