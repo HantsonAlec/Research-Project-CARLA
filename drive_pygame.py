@@ -222,7 +222,7 @@ def main():
 
     # Model paths
     yolo_model_path = "./models/yolov5.pt"
-    detr_model_path = "./models/epoch=99-step=60299.ckpt"
+    detr_model_path = "./models/epoch=148-step=119199.ckpt"
 
     # Initialize lane detection model
     if args.lane == 'lstr':
