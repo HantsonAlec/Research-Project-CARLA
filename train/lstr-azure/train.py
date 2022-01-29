@@ -1,4 +1,5 @@
 import os
+import sys
 import azureml.core
 from azureml.core.authentication import AzureCliAuthentication
 from azureml.core import ScriptRunConfig
@@ -16,7 +17,7 @@ load_dotenv()
 def prepareEnv(ws, env_name):
     env = Environment(env_name)
     cd = CondaDependencies(
-        conda_dependencies_file_path="./environment.yml")
+        conda_dependencies_file_path="train/lstr-azure/environment.yml")
     env.python.conda_dependencies = cd
 
     # Register environment to re-use later
@@ -66,7 +67,7 @@ def main():
     model_name = os.environ.get("AML_MODEL_NAME")
     dataset_name = os.environ.get("AML_DATASET_NAME")
     # Use env for training and testing
-    script_folder = '../../LSTR'
+    script_folder = 'LSTR'
     cli_auth = AzureCliAuthentication()
 
     ws = Workspace.get(
