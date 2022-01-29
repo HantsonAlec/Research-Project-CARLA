@@ -16,7 +16,7 @@ load_dotenv()
 def prepareEnv(ws, env_name):
     env = Environment(env_name)
     cd = CondaDependencies(
-        conda_dependencies_file_path="environment.yml")
+        conda_dependencies_file_path="./environment.yml")
     env.python.conda_dependencies = cd
 
     # Register environment to re-use later
@@ -26,12 +26,10 @@ def prepareEnv(ws, env_name):
 
 
 def prepareMachines(ws):
-    # If machine not yet ready, create !y
-
     # choose a name for your cluster
     compute_name = os.environ.get("AML_COMPUTE_NAME")
-    compute_min_nodes = os.environ.get("AML_COMPUTE_MIN_NODES")
-    compute_max_nodes = os.environ.get("AML_COMPUTE_MAX_NODES")
+    compute_min_nodes = int(os.environ.get("AML_COMPUTE_MIN_NODES"))
+    compute_max_nodes = int(os.environ.get("AML_COMPUTE_MAX_NODES"))
     vm_size = os.environ.get("AML_VM_SIZE")
 
     if compute_name in ws.compute_targets:
