@@ -118,8 +118,6 @@ def draw_image_lstr(image_surface, lane_points):
             for points in lane:
                 pygame.draw.circle(
                     image_surface, (255, 0, 0), tuple(points), 3)
-            # pygame.draw.line(image_surface, (255, 0, 0),
-            #                 tuple(lane[0]), tuple(lane[-1]), 10)
     except:
         pass
 
@@ -301,6 +299,7 @@ def main():
                     buffer_converted.swapaxes(0, 1))
 
                 if(args.lane == 'ht'):
+                    # Don't predcit avery frame
                     if i % 20 == 0:
                         lines = lane_detector.detect_lanes(buffer)
                     # Draw
