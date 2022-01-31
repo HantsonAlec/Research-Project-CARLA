@@ -159,7 +159,6 @@ Carla-Lane-Detection-Dataset-Generation
 lane_detection.py
 generate_traffic.py
 testimages
-models
 LSTR
 test.py
 content
